@@ -9,7 +9,7 @@ from binance import Client
 from binance.enums import *
 
 RSI_PERIOD = 14
-RSI_OVERBOUGHT = 60
+RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 TRADE_QUANTITY = 0.005
 
@@ -25,10 +25,10 @@ class Watcher:
         self._bought = False
 
         self.SOCKET = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_1m"
-        self._client = Client(api_key=self.API_KEY, api_secret=self.SECRET_KEY, testnet=True)
+        self._client = Client(api_key=self.API_KEY, api_secret=self.SECRET_KEY)
 
     async def listen(self):
-        self._ws = await websockets.connect(self.SOCKET)
+        self._ws = await websockets.connect(self.SOCKET, ping_interval=None)
 
         async for message in self._ws:
             await self._receive(message)
@@ -36,7 +36,7 @@ class Watcher:
     async def _receive(self, message):
         kline = json.loads(message)['k']
         if kline['x']:
-            pprint(kline)
+            print(kline)
             self._closes.append(float(kline['c']))
 
             if len(self._closes) > RSI_PERIOD:
@@ -72,9 +72,9 @@ class Watcher:
                 type=ORDER_TYPE_MARKET,
                 quantity=TRADE_QUANTITY
             )
-            logging.warn(order)
+            logging.warning(order)
         except Exception as e:
-            print(e)
+            logging.error(e)
             return False
 
         return True

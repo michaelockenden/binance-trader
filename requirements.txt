@@ -4,4 +4,3 @@ python-binance
 asyncio
 websockets
 python-dotenv
-asks
