@@ -1,12 +1,10 @@
 import json
 import logging
-from pprint import pprint
 
 import numpy
 import talib
 import websockets
-from binance import Client
-from binance.enums import *
+import ccxt.async_support as ccxt
 
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
@@ -21,21 +19,22 @@ class Watcher:
         self.API_KEY = api
         self.SECRET_KEY = secret
         self._ws = None
+        self._loop = None
         self._closes = []
         self._bought = False
 
         self.SOCKET = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_1m"
-        self._client = Client(api_key=self.API_KEY, api_secret=self.SECRET_KEY)
 
-    async def listen(self):
+    async def listen(self, loop):
         self._ws = await websockets.connect(self.SOCKET, ping_interval=None)
+        self._loop = loop
 
         async for message in self._ws:
             await self._receive(message)
 
     async def _receive(self, message):
         kline = json.loads(message)['k']
-        if kline['x']:
+        if kline['x'] or True:
             print(kline)
             self._closes.append(float(kline['c']))
 
@@ -49,32 +48,44 @@ class Watcher:
         if rsi > RSI_OVERBOUGHT:
             if self._bought:
                 print("==SELL==")
-                if await self._order(SIDE_SELL):
+                if await self._order("sell"):
                     self._bought = False
                     return True
                 else:
                     return False
 
-        elif rsi < RSI_OVERSOLD:
+        elif rsi < RSI_OVERSOLD or True:
             if not self._bought:
                 print("==BUY==")
-                if await self._order(SIDE_BUY):
+                if await self._order("buy"):
                     self._bought = True
                     return True
                 else:
                     return False
 
     async def _order(self, side):
+        exchange = ccxt.binance({
+            'asyncio_loop': self._loop,
+            'enableRateLimit': True,
+            'apiKey': self.API_KEY,
+            'secret': self.SECRET_KEY,
+            # 'verbose': True
+        })
         try:
-            order = self._client.create_order(
-                symbol=self.SYMBOL,
-                side=side,
-                type=ORDER_TYPE_MARKET,
-                quantity=TRADE_QUANTITY
-            )
-            logging.warning(order)
-        except Exception as e:
-            logging.error(e)
+            type = 'limit'  # or market
+            side = 'buy'
+            order = await exchange.create_order(self.SYMBOL, type, side, TRADE_QUANTITY, {
+                'type': 'spot',
+            })
+            print(order)
+            return True
+        except ccxt.InsufficientFunds as e:
+            print('create_order() failed – not enough funds')
+            logging.warning(e)
             return False
-
-        return True
+        except Exception as e:
+            print('create_order() failed')
+            logging.warning(e)
+            return False
+        finally:
+            await exchange.close()

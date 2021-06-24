@@ -1,13 +1,11 @@
 import asyncio
 import logging
 
-from binance.client import Client
-from dotenv import load_dotenv, dotenv_values
+from dotenv import dotenv_values
 from watcher import Watcher
 
 
 def set_env():
-    load_dotenv()
     env = dotenv_values(".env")
 
     api = env["API_KEY"]
@@ -23,6 +21,7 @@ if __name__ == "__main__":
                         datefmt='%H:%M:%S',
                         level=logging.INFO)
 
-    client = Client(*set_env(), testnet=True)
     watcher = Watcher("ETHUSDT", *set_env())
-    asyncio.run(watcher.listen())
+
+    asyncio_loop = asyncio.get_event_loop()
+    asyncio_loop.run_until_complete(watcher.listen(asyncio_loop))
