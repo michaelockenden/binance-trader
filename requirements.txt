@@ -1,6 +1,6 @@
 numpy
 TA-Lib
-python-binance
 asyncio
 websockets
 python-dotenv
+ccxt
