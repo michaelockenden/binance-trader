@@ -4,14 +4,36 @@ import logging
 from dotenv import dotenv_values
 from watcher import Watcher
 
+# TODO: Add minimum quantity/account balance validator
+# TODO: Automatically adjust bought/sold indicator based on current holdings
+# TODO: Find a way to change RSI thresholds without rerunning the program
+# TODO: Add indicators displaying profit
+# TODO: Increase or decrease quantity depending on how certain the trade is
+
 
 def set_env():
+    """Returns personal API key and Secret key from a .env file."""
+
     env = dotenv_values(".env")
 
     api = env["API_KEY"]
     secret = env["SECRET_KEY"]
 
     return api, secret
+
+
+async def start(loop):
+    """Creates a watcher for each symbol and runs them at once."""
+
+    symbols = [("ETH", 0.005), ("ADA", 10), ("ALGO", 10)]
+    tasks = []
+    api, secret = set_env()
+
+    for symbol in symbols:
+        watcher = Watcher(api, secret, *symbol)
+        tasks.append(watcher.listen(loop))
+
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
@@ -21,7 +43,5 @@ if __name__ == "__main__":
                         datefmt='%H:%M:%S',
                         level=logging.INFO)
 
-    watcher = Watcher("ETHUSDT", *set_env())
-
     asyncio_loop = asyncio.get_event_loop()
-    asyncio_loop.run_until_complete(watcher.listen(asyncio_loop))
+    asyncio_loop.run_until_complete(start(asyncio_loop))
