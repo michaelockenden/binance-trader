@@ -9,21 +9,21 @@ import ccxt.async_support as ccxt
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
-TRADE_QUANTITY = 0.005
 
 
 class Watcher:
 
-    def __init__(self, symbol, api, secret):
-        self.SYMBOL = symbol
+    def __init__(self, api, secret, symbol, quantity):
         self.API_KEY = api
         self.SECRET_KEY = secret
+        self.SYMBOL = symbol + "/USDT"
+        self.QUANTITY = quantity
         self._ws = None
         self._loop = None
         self._closes = []
         self._bought = False
 
-        self.SOCKET = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@kline_1m"
+        self.SOCKET = f"wss://stream.binance.com:9443/ws/{symbol.lower()}usdt@kline_1m"
 
     async def listen(self, loop):
         self._ws = await websockets.connect(self.SOCKET, ping_interval=None)
@@ -34,7 +34,7 @@ class Watcher:
 
     async def _receive(self, message):
         kline = json.loads(message)['k']
-        if kline['x'] or True:
+        if kline['x']:
             print(kline)
             self._closes.append(float(kline['c']))
 
@@ -54,7 +54,7 @@ class Watcher:
                 else:
                     return False
 
-        elif rsi < RSI_OVERSOLD or True:
+        elif rsi < RSI_OVERSOLD:
             if not self._bought:
                 print("==BUY==")
                 if await self._order("buy"):
@@ -72,12 +72,12 @@ class Watcher:
             # 'verbose': True
         })
         try:
-            type = 'limit'  # or market
-            side = 'buy'
-            order = await exchange.create_order(self.SYMBOL, type, side, TRADE_QUANTITY, {
+            type = 'market'
+            order = await exchange.create_order(self.SYMBOL, type, side, self.QUANTITY, None, {
                 'type': 'spot',
             })
             print(order)
+            logging.warning(order)
             return True
         except ccxt.InsufficientFunds as e:
             print('create_order() failed – not enough funds')
