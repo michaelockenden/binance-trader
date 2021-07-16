@@ -67,8 +67,14 @@ class PaperTrader(Watcher):
 
     async def _order(self, side):
         exchange = ccxt.binance({'asyncio_loop': self._loop})
-        price = await exchange.fetch_ticker(self.SYMBOL)
-        price = price['close']
-        order = f"{side} - {self.SYMBOL} at {price}"
-        logging.warning(order)
-        await exchange.close()
+        try:
+            price = await exchange.fetch_ticker(self.SYMBOL)
+            price = price['close']
+            order = f"{side} - {self.SYMBOL} at {price}"
+            logging.warning(order)
+            return True
+        except Exception as e:
+            logging.warning(e)
+            return False
+        finally:
+            await exchange.close()
