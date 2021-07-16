@@ -1,25 +1,26 @@
 import json
-import logging
+from abc import ABC, abstractmethod
 
 import numpy
 import talib
 import websockets
-import ccxt.async_support as ccxt
 
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 
 
-class Watcher:
+class Watcher(ABC):
+    """
+    Responsible for watching symbol candles and deciding when to order.
+    """
 
-    def __init__(self, api, secret, symbol, quantity):
-        self.API_KEY = api
-        self.SECRET_KEY = secret
+    def __init__(self, symbol):
         self.SYMBOL = symbol + "/USDT"
-        self.QUANTITY = quantity
+
         self._ws = None
         self._loop = None
+
         self._closes = []
         self._bought = False
 
@@ -63,29 +64,6 @@ class Watcher:
                 else:
                     return False
 
+    @abstractmethod
     async def _order(self, side):
-        exchange = ccxt.binance({
-            'asyncio_loop': self._loop,
-            'enableRateLimit': True,
-            'apiKey': self.API_KEY,
-            'secret': self.SECRET_KEY,
-            # 'verbose': True
-        })
-        try:
-            type = 'market'
-            order = await exchange.create_order(self.SYMBOL, type, side, self.QUANTITY, None, {
-                'type': 'spot',
-            })
-            print(order)
-            logging.warning(order)
-            return True
-        except ccxt.InsufficientFunds as e:
-            print('create_order() failed – not enough funds')
-            logging.warning(e)
-            return False
-        except Exception as e:
-            print('create_order() failed')
-            logging.warning(e)
-            return False
-        finally:
-            await exchange.close()
+        pass
