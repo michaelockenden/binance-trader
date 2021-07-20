@@ -17,7 +17,9 @@ class Watcher(ABC):
     """
 
     def __init__(self, symbol):
-        self.SYMBOL = symbol + "/USDT"
+        self.base = symbol
+        self.quote = "USDT"
+        self.SYMBOL = self.base + "/" + self.quote
 
         self._ws = None
         self._loop = None
@@ -32,7 +34,8 @@ class Watcher(ABC):
         self._loop = loop
 
         async for message in self._ws:
-            await self._receive(message)
+            if await self._receive(message):
+                yield True
 
     async def _receive(self, message):
         kline = json.loads(message)['k']
@@ -55,21 +58,9 @@ class Watcher(ABC):
         if rsi > RSI_OVERBOUGHT:
             if self._bought:
                 print("==SELL==")
-                if await self._order("sell"):
-                    self._bought = False
-                    return True
-                else:
-                    return False
+                return "sell"
 
         elif rsi < RSI_OVERSOLD:
             if not self._bought:
                 print("==BUY==")
-                if await self._order("buy"):
-                    self._bought = True
-                    return True
-                else:
-                    return False
-
-    @abstractmethod
-    async def _order(self, side):
-        pass
+                return "buy"
