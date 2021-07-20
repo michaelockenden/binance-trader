@@ -64,6 +64,8 @@ class PaperTrader(Watcher):
         super(PaperTrader, self).__init__(symbol)
 
         self.QUANTITY = quantity
+        self.usdt = 100
+        self.running_profit = self.usdt - 100
 
     async def _order(self, side):
         exchange = ccxt.binance({'asyncio_loop': self._loop})
@@ -71,6 +73,14 @@ class PaperTrader(Watcher):
             price = await exchange.fetch_ticker(self.SYMBOL)
             price = price['close']
             order = f"{side} - {self.SYMBOL} at {price}"
+
+            if side == "buy":
+                self.usdt -= self.QUANTITY * price
+
+            if side == "sell":
+                self.usdt += self.QUANTITY * price
+                order += f"| usdt: {self.usdt} | total profit: {self.running_profit}%"
+
             logging.warning(order)
             return True
         except Exception as e:

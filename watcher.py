@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import numpy
 import talib
 import websockets
+import time
 
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
@@ -35,8 +36,11 @@ class Watcher(ABC):
 
     async def _receive(self, message):
         kline = json.loads(message)['k']
+
         if kline['x']:
-            print(kline)
+            # 'x' being True indicates the candle has closed
+
+            print(time.ctime(time.time()), kline)
             self._closes.append(float(kline['c']))
 
             if len(self._closes) > RSI_PERIOD:
@@ -46,6 +50,8 @@ class Watcher(ABC):
                 return await self._check(rsi[-1])
 
     async def _check(self, rsi):
+        # TODO: Use enum or constants for buy and sell sides
+
         if rsi > RSI_OVERBOUGHT:
             if self._bought:
                 print("==SELL==")
