@@ -33,8 +33,9 @@ class Watcher:
         self._loop = loop
 
         async for message in self._ws:
-            if await self._receive(message):
-                yield True
+            signal = await self._receive(message)
+            if signal:
+                yield signal
 
     async def _receive(self, message):
         kline = json.loads(message)['k']
