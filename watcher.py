@@ -58,9 +58,11 @@ class Watcher:
         if rsi > RSI_OVERBOUGHT:
             if self._bought:
                 print("==SELL==")
+                self._bought = False
                 return "sell"
 
         elif rsi < RSI_OVERSOLD:
             if not self._bought:
                 print("==BUY==")
+                self._bought = True
                 return "buy"
