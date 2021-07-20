@@ -1,6 +1,5 @@
 import json
 import time
-from abc import ABC
 
 import numpy
 import talib
@@ -11,7 +10,7 @@ RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 
 
-class Watcher(ABC):
+class Watcher:
     """
     Responsible for watching symbol candles and deciding when to order.
     """
