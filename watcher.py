@@ -1,10 +1,10 @@
 import json
-from abc import ABC, abstractmethod
+import time
+from abc import ABC
 
 import numpy
 import talib
 import websockets
-import time
 
 RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70

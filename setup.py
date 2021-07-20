@@ -1,9 +1,8 @@
 import asyncio
 import logging
 
-from pprint import pprint
 from dotenv import dotenv_values
-from trader import PaperTrader
+
 from manager import Manager
 
 
