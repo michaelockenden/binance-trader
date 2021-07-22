@@ -1,9 +1,9 @@
 import asyncio
 import logging
 
-from pprint import pprint
 from dotenv import dotenv_values
-from trader import PaperTrader
+
+from manager import Manager
 
 
 # TODO: Add minimum quantity/account balance validator
@@ -24,19 +24,6 @@ def set_env():
     return api, secret
 
 
-async def start(loop):
-    """Creates a watcher for each symbol and runs them at once."""
-
-    symbols = [("ETH", 0.005), ("ADA", 10), ("ALGO", 10), ("BTC", 0.00001)]
-    tasks = []
-    api, secret = set_env()
-
-    for symbol in symbols:
-        trader = PaperTrader(*symbol)
-        tasks.append(trader.listen(loop))
-
-    await asyncio.gather(*tasks)
-
 if __name__ == "__main__":
     logging.basicConfig(filename="orders.log",
                         filemode='a',
@@ -44,5 +31,8 @@ if __name__ == "__main__":
                         datefmt='%H:%M:%S',
                         level=logging.INFO)
 
-    asyncio_loop = asyncio.get_event_loop()
-    asyncio_loop.run_until_complete(start(asyncio_loop))
+    symbols = {"ETH": 0.005, "ADA": 10, "ALGO": 15, "BTC": 0.00001}
+    manager = Manager(symbols)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(manager.run(loop))
