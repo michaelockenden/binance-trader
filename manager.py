@@ -4,6 +4,7 @@ import logging
 import ccxt.async_support as ccxt
 
 from watcher import Watcher
+from strategy import BUY, SELL
 
 
 class Manager:
@@ -33,7 +34,7 @@ class Manager:
     async def _watch(self, watcher):
         async for side in watcher.listen(self.loop):
             quantity = self.symbols[watcher.base]
-            await self._order(side, watcher.SYMBOL, quantity)
+            await self._order(side, watcher.symbol, quantity)
 
     async def _order(self, side, symbol, quantity):
         exchange = ccxt.binance({'asyncio_loop': self.loop})
@@ -42,10 +43,10 @@ class Manager:
             price = price['close']
             order = f"{side} - {symbol} at {price}"
 
-            if side == "buy":
+            if side == BUY:
                 self.usdt -= quantity * price
 
-            if side == "sell":
+            if side == SELL:
                 self.usdt += quantity * price
                 running_profit = self.usdt - 100
                 order += f"| usdt: {self.usdt} | total profit: {running_profit}%"
