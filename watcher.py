@@ -12,22 +12,19 @@ class Watcher:
     Responsible for watching symbol candles and deciding when to order.
     """
 
-    def __init__(self, symbol):
-        self.base = symbol
+    def __init__(self, base):
+        self.base = base
         self.quote = "USDT"
         self.symbol = self.base + "/" + self.quote
 
         self._ws = None
-        self._loop = None
 
         self._closes = []
-        self._bought = False
 
-        self.socket = f"wss://stream.binance.com:9443/ws/{symbol.lower()}usdt@kline_1m"
+        self.socket = f"wss://stream.binance.com:9443/ws/{self.base.lower()}usdt@kline_1m"
 
-    async def listen(self, loop):
+    async def listen(self):
         self._ws = await websockets.connect(self.socket, ping_interval=None)
-        self._loop = loop
 
         async for message in self._ws:
             signal = await self._receive(message)
@@ -45,10 +42,4 @@ class Watcher:
 
             action = analyse(self._closes)
 
-            if action == BUY and not self._bought:
-                self._bought = True
-                return action
-
-            if action == SELL and self._bought:
-                self._bought = False
-                return action
+            return action
