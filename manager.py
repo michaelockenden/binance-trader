@@ -44,21 +44,21 @@ class Manager:
         """Uses a generator to continuously return values from a watcher"""
 
         async for side in watcher.listen():
-            quantity = await self._check_position(side, watcher.base)
-            if quantity:
+            if await self._check_position(side, watcher.base):
+                quantity = self.bases[watcher.base]
                 await self._order(side, watcher.symbol, quantity)
 
     async def _check_position(self, side, base):
         quantity = self.bases[base]
         if side == BUY:
             if self.usdt >= 20:
-                return quantity
+                return True
 
         elif side == SELL:
             if self.holdings[base] >= quantity:
-                return quantity
+                return True
 
-        return None
+        return False
 
     async def _order(self, side, symbol, quantity):
         exchange = a_ccxt.binance({'asyncio_loop': self._loop})
@@ -97,6 +97,19 @@ class RealManager(Manager):
         self.api_key = api
         self.secret_key = secret
 
+    async def _check_position(self, side, base):
+        quantity = self.bases[base]
+        if side == BUY:
+            if self.balance >= 20:
+                return True
+
+        elif side == SELL:
+            if self.holding(base) >= quantity:
+                return True
+
+        else:
+            return False
+
     async def _order(self, side, symbol, quantity):
         exchange = a_ccxt.binance({
             'asyncio_loop': self._loop,
@@ -125,8 +138,7 @@ class RealManager(Manager):
         finally:
             await exchange.close()
 
-    @property
-    def balance(self):
+    def holding(self, asset):
         exchange = ccxt.binance({
             'enableRateLimit': True,
             'apiKey': self.api_key,
@@ -135,4 +147,8 @@ class RealManager(Manager):
         })
         exchange.set_sandbox_mode(True)
         balance = exchange.fetch_balance()
-        return balance['USDT']['free']
+        return balance[asset]['free']
+
+    @property
+    def balance(self):
+        return self.holding('USDT')

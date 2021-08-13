@@ -3,7 +3,6 @@ import time
 
 import websockets
 
-from strategy import BUY, SELL
 from strategy import analyse
 
 
