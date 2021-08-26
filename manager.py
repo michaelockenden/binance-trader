@@ -1,11 +1,13 @@
 import asyncio
 import logging
 
-import ccxt.async_support as a_ccxt
 import ccxt
+import ccxt.async_support as a_ccxt
 
-from watcher import Watcher
 from strategy import BUY, SELL
+from watcher import Watcher
+
+QUOTE_PRICE = 15
 
 
 class Manager:
@@ -14,9 +16,6 @@ class Manager:
     """
 
     def __init__(self, bases):
-        self.usdt = 100
-        self.holdings = dict()
-
         self.bases = bases
         self.watchers = []
 
@@ -25,8 +24,6 @@ class Manager:
         for base in bases:
             watcher = Watcher(base)
             self.watchers.append(watcher)
-
-            self.holdings[base] = 0
 
     def run(self):
         self._loop.run_until_complete(self._gather())
@@ -42,50 +39,12 @@ class Manager:
 
     async def _watch(self, watcher):
         """Uses a generator to continuously return values from a watcher"""
-
+        # TODO: separate the quantity logic from the generator
         async for side in watcher.listen():
-            if await self._check_position(side, watcher.base):
-                quantity = self.bases[watcher.base]
+            quantity = QUOTE_PRICE / watcher.price
+            quantity = await self._check_position(side, watcher.base, quantity)
+            if quantity:
                 await self._order(side, watcher.symbol, quantity)
-
-    async def _check_position(self, side, base):
-        quantity = self.bases[base]
-        if side == BUY:
-            if self.usdt >= 20:
-                return True
-
-        elif side == SELL:
-            if self.holdings[base] >= quantity:
-                return True
-
-        return False
-
-    async def _order(self, side, symbol, quantity):
-        exchange = a_ccxt.binance({'asyncio_loop': self._loop})
-        try:
-            price = await exchange.fetch_ticker(symbol)
-            price = price['close']
-            order = f"{side} - {symbol} at {price}"
-
-            if side == BUY:
-                self.usdt -= quantity * price
-                self.holdings[symbol.split("/")[0]] += quantity
-
-            if side == SELL:
-                self.usdt += quantity * price
-                self.holdings[symbol.split("/")[0]] -= quantity
-                running_profit = self.usdt - 100
-                order += f"| usdt: {self.usdt} | total profit: {running_profit}%"
-
-            logging.warning(order)
-            return True
-
-        except Exception as e:
-            logging.warning(e)
-            return False
-
-        finally:
-            await exchange.close()
 
 
 class RealManager(Manager):
@@ -97,18 +56,32 @@ class RealManager(Manager):
         self.api_key = api
         self.secret_key = secret
 
-    async def _check_position(self, side, base):
-        quantity = self.bases[base]
+    def run(self):
+        if self.validate_balance():
+            self._loop.run_until_complete(self._gather())
+
+    def validate_balance(self):
+        if self.balance >= QUOTE_PRICE * len(self.bases):
+            return True
+        else:
+            print("Insufficient balance")
+            return False
+
+    async def _check_position(self, side, base, quantity):
+
         if side == BUY:
-            if self.balance >= 20:
-                return True
+            if self.balance >= QUOTE_PRICE:
+                return quantity
 
         elif side == SELL:
             if self.holding(base) >= quantity:
-                return True
+                if self.holding(base) < 2*quantity:
+                    return self.holding(base)
+                else:
+                    return quantity
 
         else:
-            return False
+            return None
 
     async def _order(self, side, symbol, quantity):
         exchange = a_ccxt.binance({
@@ -121,11 +94,12 @@ class RealManager(Manager):
         exchange.set_sandbox_mode(True)
         try:
             order_type = 'market'
-            order = await exchange.create_order(symbol, order_type, side, quantity, None, {
-                'type': 'spot',
-            })
-            print(order)
-            logging.warning(order)
+            order = await exchange.create_order(
+                symbol, order_type, side, quantity, price=None, params={'type': 'spot'}
+            )
+            logging.debug(order)
+            summary = f"{side}: {order['amount']} {symbol} at {order['price']}"
+            logging.warning(summary)
             return True
         except ccxt.InsufficientFunds as e:
             print('create_order() failed – not enough funds')

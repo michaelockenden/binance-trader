@@ -1,26 +1,24 @@
-import asyncio
 import logging
 
 from dotenv import dotenv_values
-
-from manager import Manager, RealManager
-
 from pprint import pprint
 
+from manager import RealManager
 
-# TODO: Add minimum quantity/account balance validator
-# TODO: Automatically adjust bought/sold indicator based on current holdings
-# TODO: Find a way to change RSI thresholds without rerunning the program
+# TODO: Add debug mode
+# TODO: Add backtesting suite
 # TODO: Add indicators displaying profit
 # TODO: Increase or decrease quantity depending on how certain the trade is
 
+debug_flag = True
 
-def set_env(test=True):
+
+def set_env():
     """Returns personal API key and Secret key from a .env file."""
 
     env = dotenv_values(".env")
 
-    if test:
+    if debug_flag:
         api = env["API_KEY_TEST"]
         secret = env["SECRET_KEY_TEST"]
     else:
@@ -37,7 +35,7 @@ if __name__ == "__main__":
                         datefmt='%H:%M:%S',
                         level=logging.INFO)
 
-    assets = {"ETH": 0.005, "ADA": 10, "ALGO": 15, "BTC": 0.00001}
+    assets = ["ETH", "BTC"]
 
     # manager = RealManager(assets, *set_env())
     # pprint(manager.balance)
@@ -47,5 +45,5 @@ if __name__ == "__main__":
     # manager._loop = loop
     # print(loop.run_until_complete(manager.balance))
 
-    manager = Manager(assets)
+    manager = RealManager(assets, *set_env())
     manager.run()

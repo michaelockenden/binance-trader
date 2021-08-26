@@ -23,6 +23,7 @@ class Watcher:
         self.socket = f"wss://stream.binance.com:9443/ws/{self.base.lower()}usdt@kline_1m"
 
     async def listen(self):
+        """Connects to websocket and constantly listens for any received messages"""
         self._ws = await websockets.connect(self.socket, ping_interval=None)
 
         async for message in self._ws:
@@ -31,6 +32,7 @@ class Watcher:
                 yield signal
 
     async def _receive(self, message):
+        """Handles received messages"""
         kline = json.loads(message)['k']
 
         if kline['x'] or True:
@@ -42,3 +44,8 @@ class Watcher:
             action = analyse(self._closes)
 
             return action
+
+    @property
+    def price(self):
+        """Returns latest price"""
+        return self._closes[-1]
