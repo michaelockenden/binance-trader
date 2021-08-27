@@ -16,15 +16,14 @@ def analyse(closes=None):
 
     np_closes = numpy.array(closes)
     rsi = talib.RSI(np_closes, RSI_PERIOD)
-    print(rsi)
 
     latest_rsi = rsi[-1]
 
     if latest_rsi > RSI_OVERBOUGHT:
-        return BUY
+        return SELL
 
     elif latest_rsi < RSI_OVERSOLD:
-        return SELL
+        return BUY
 
     else:
         return None
