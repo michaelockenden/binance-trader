@@ -8,6 +8,7 @@ from strategy import BUY, SELL
 from watcher import Watcher
 
 QUOTE_PRICE = 15
+QUOTE_MIN = 10
 
 
 class Manager:
@@ -41,8 +42,7 @@ class Manager:
         """Uses a generator to continuously return values from a watcher"""
         # TODO: separate the quantity logic from the generator
         async for side in watcher.listen():
-            quantity = QUOTE_PRICE / watcher.price
-            quantity = await self._check_position(side, watcher.base, quantity)
+            quantity = await self._check_position(side, watcher.base, watcher.price)
             if quantity:
                 await self._order(side, watcher.symbol, quantity)
 
@@ -67,13 +67,15 @@ class RealManager(Manager):
             print("Insufficient balance")
             return False
 
-    async def _check_position(self, side, base, quantity):
+    async def _check_position(self, side, base, price):
 
         if side == BUY:
+            quantity = QUOTE_PRICE / price
             if self.balance >= QUOTE_PRICE:
                 return quantity
 
         elif side == SELL:
+            quantity = QUOTE_MIN / price
             if self.holding(base) >= quantity:
                 if self.holding(base) < 2*quantity:
                     return self.holding(base)
