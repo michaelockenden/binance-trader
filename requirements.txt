@@ -4,3 +4,4 @@ asyncio
 websockets
 python-dotenv
 ccxt
+matplotlib

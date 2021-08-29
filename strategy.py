@@ -5,13 +5,16 @@ RSI_PERIOD = 14
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 
+EMA_SHORT = 28
+EMA_LONG = 89
+
 BUY = 'buy'
 SELL = 'sell'
 
 
 def analyse(closes=None):
 
-    if len(closes) <= RSI_PERIOD:
+    if len(closes) <= EMA_LONG:
         return None
 
     np_closes = numpy.array(closes)
@@ -19,10 +22,15 @@ def analyse(closes=None):
 
     latest_rsi = rsi[-1]
 
-    if latest_rsi > RSI_OVERBOUGHT:
+    short_ema = talib.EMA(np_closes, EMA_SHORT)
+    long_ema = talib.EMA(np_closes, EMA_LONG)
+
+    cross = short_ema[-1] - long_ema[-1]
+
+    if latest_rsi * abs(cross) > RSI_OVERBOUGHT and cross < 0:
         return SELL
 
-    elif latest_rsi < RSI_OVERSOLD:
+    elif latest_rsi / abs(cross) < RSI_OVERSOLD and cross > 0:
         return BUY
 
     else:
