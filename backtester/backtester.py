@@ -1,8 +1,4 @@
-from datetime import datetime
-
-import numpy
-import pandas as pd
-
+from parse_csv import parse
 from graph import plot
 from strategy import BUY, SELL
 from strategy import analyse
@@ -26,18 +22,19 @@ trade_sell = []
 # TODO: make it so not all equity is used on every order
 # TODO: add another asset (e.g. ETH)
 
-df = pd.read_csv("backtester/data/Bitstamp_BTCUSD_2021_minute.csv")
-df.drop(['date', 'symbol'], axis=1, inplace=True)
-df.apply(pd.to_numeric)
-df['date'] = df['unix'].apply(datetime.fromtimestamp)
+df = parse()
 
 for line in df.itertuples():
 
     # TODO: replace this with DataFrame.resample()
-    if line.Index % 1 != 0:
+    if line.Index % 15 != 0:
         continue
 
     price = line.close
+    prices.append(price)
+
+    if len(prices) > 200:
+        del prices[0]
 
     if initial_price is None:
         initial_price = price
@@ -50,10 +47,9 @@ for line in df.itertuples():
     increase = (price - initial_price) / initial_price + 1
     price_movement.append(START * increase)
 
-    date = datetime.fromtimestamp(int(line.unix))
+    date = line.date
     dates.append(date)
 
-    prices = df['close'][-200:]
     action = analyse(prices)
 
     if action:
