@@ -5,8 +5,8 @@ RSI_PERIOD = 15
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
 
-EMA_SHORT = 30
-EMA_LONG = 120
+EMA_SHORT = 15
+EMA_LONG = 50
 
 BUY = 'buy'
 SELL = 'sell'
@@ -14,7 +14,7 @@ SELL = 'sell'
 
 def analyse(closes=None):
 
-    if len(closes) <= EMA_LONG:
+    if len(closes) < EMA_LONG:
         return None
 
     np_closes = numpy.array(closes)
@@ -28,10 +28,10 @@ def analyse(closes=None):
     cross = (short_ema[-1] - long_ema[-1]) / long_ema[-1] + 1
 
     if latest_rsi / cross > RSI_OVERBOUGHT:
-        return SELL
+        return BUY
 
     elif latest_rsi / cross < RSI_OVERSOLD:
-        return BUY
+        return SELL
 
     else:
         return None
