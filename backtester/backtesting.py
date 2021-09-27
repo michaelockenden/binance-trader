@@ -25,13 +25,7 @@ trade_sell = []
 if __name__ == "__main__":
     df = parse()
 
-    count = 0
     for line in df.itertuples():
-
-        # TODO: replace this with DataFrame.resample()
-        count += 1
-        if count % 15 != 0:
-            continue
 
         price = line.close
         prices.append(price)
